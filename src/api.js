@@ -28,12 +28,22 @@ function convertSeries(series) {
   };
 }
 
+var cachedSearches = {};
+
 export function search(query) {
+  if (query in cachedSearches) {
+    return Promise.resolve(cachedSearches[query]);
+  }
+
   return getJson({s: query, type: 'series'})
     .then(data => {
-      return ensureArray(data.Search)
+      var result = ensureArray(data.Search)
         .map(convertSeries)
         // Dedupe
         .filter((series, i, all) => i === 0 || series.id !== all[i - 1].id);
+
+      cachedSearches[query] = result;
+
+      return result;
     });
 }
