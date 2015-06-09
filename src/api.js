@@ -1,11 +1,28 @@
-var baseUrl = 'http://www.omdbapi.com/'
+// http://docs.themoviedb.apiary.io/#reference/tv
+// http://www.programmableweb.com/category/all/apis?keyword=tv
+// http://www.tvmaze.com/api
 
-function getJson(params) {
-  var serializedParams = Object.keys(params)
+
+const baseUrl = 'http://api.tvmaze.com/'
+
+const cachedResponses = {};
+
+function getJson(path, params = {}) {
+  const serializedParams = Object.keys(params)
     .map(k => k + '=' + encodeURIComponent(params[k]))
     .join('&');
-  return fetch(baseUrl + '?' + serializedParams)
-    .then(response => response.json());
+  const url = baseUrl + path + '?' + serializedParams;
+
+  if (url in cachedResponses) {
+    return Promise.resolve(cachedResponses[url]);
+  }
+
+  return cachedResponses[url] = fetch(url)
+    .then(response => response.json())
+    .then(json => {
+      cachedResponses[url] = json;
+      return json;
+    });
 }
 
 function ensureArray(value) {
@@ -20,30 +37,33 @@ function ensureArray(value) {
   return value;
 }
 
-function convertSeries(series) {
+function translateShow(show) {
   return {
-    year: series.Year,
-    id: series.imdbID,
-    title: series.Title,
+    id: show.id,
+    imageURL: show.image.medium,
+    name: show.name,
+    year: show.premiered.split('-')[0],
   };
 }
 
-var cachedSearches = {};
-
 export function search(query) {
-  if (query in cachedSearches) {
-    return Promise.resolve(cachedSearches[query]);
-  }
+  return getJson('search/shows/', {q: query})
+    .then(data => data.map(result => translateShow(result.show)));
+}
 
-  return getJson({s: query, type: 'series'})
-    .then(data => {
-      var result = ensureArray(data.Search)
-        .map(convertSeries)
-        // Dedupe
-        .filter((series, i, all) => i === 0 || series.id !== all[i - 1].id);
+function translateEpisode(episode) {
+  return {
+    airDate: episode.airdate,
+    episodeNumber: episode.number,
+    id: episode.id,
+    imageURL: episode.image && episode.image.medium,
+    name: episode.name,
+    seasonNumber: episode.season,
+    summary: episode.summary.replace(/<\/?p>/g, ''),
+  };
+}
 
-      cachedSearches[query] = result;
-
-      return result;
-    });
+export function getEpisodes(showID) {
+  return getJson(`shows/${showID}/episodes`)
+    .then(data => data.map(translateEpisode));
 }

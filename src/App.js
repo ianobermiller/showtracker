@@ -7,7 +7,7 @@ import * as API from './api';
 @Radium.Enhancer
 class TextInput extends Component {
   render() {
-    var {style, ...propsWithoutStyle} = this.props;
+    const {style, ...propsWithoutStyle} = this.props;
     return (
       <input
         style={[{
@@ -28,7 +28,6 @@ class TextInput extends Component {
 @Radium.Enhancer
 class ShowSelector extends Component {
   static propTypes = {
-    existingShows: PropTypes.array.isRequired,
     onShowSelected: PropTypes.func.isRequired,
   };
 
@@ -37,6 +36,7 @@ class ShowSelector extends Component {
 
     this.state = {
       searchResults: null,
+      existingShows: [],
     };
   }
 
@@ -47,8 +47,8 @@ class ShowSelector extends Component {
 
     API.search(event.target.value)
       .then(searchResults => {
-        var newShows = searchResults.filter(
-          show => !this.props.existingShows.some(
+        const newShows = searchResults.filter(
+          show => !this.state.existingShows.some(
             otherShow => show.id === otherShow.id
           )
         );
@@ -58,12 +58,15 @@ class ShowSelector extends Component {
   };
 
   _onShowSelected = (show) => {
-    this.setState({
-      query: '',
-      searchResults: null,
-    });
-
-    this.props.onShowSelected(show);
+    if (this.state.searchResults) {
+      this.setState({
+        query: '',
+        searchResults: null,
+        existingShows: this.state.existingShows.concat(show),
+      });
+    } else {
+      this.props.onShowSelected(show);
+    }
   };
 
   _onSearchQueryChange = (event) => {
@@ -71,9 +74,10 @@ class ShowSelector extends Component {
   };
 
   render() {
+    const shows = this.state.searchResults || this.state.existingShows;
     return (
       <div style={this.props.style}>
-        <div>
+        <div style={{padding: 4}}>
           <TextInput
             onChange={this._onSearchQueryChange}
             onKeyDown={this._onSearch}
@@ -85,7 +89,7 @@ class ShowSelector extends Component {
           margin: 0,
           padding: 0
         }}>
-          {(this.state.searchResults || this.props.existingShows).map((series, i) =>
+          {shows.map((series, i) =>
             <li
               key={i}
               onClick={this._onShowSelected.bind(null, series)}
@@ -93,12 +97,111 @@ class ShowSelector extends Component {
                 background: '#eee',
                 cursor: 'pointer',
                 listStyle: 'none',
-                marginTop: 4,
+                margin: 4,
                 padding: 8,
               }}>
-              {series.title} ({series.year})
+              <img
+                src={series.imageURL}
+                style={{height: 100, paddingRight: 12}}
+              />
+              {series.name} ({series.year})
             </li>
           )}
+        </ul>
+      </div>
+    );
+  }
+}
+
+@Radium.Enhancer
+export default class EpisodeList extends Component {
+  static propTypes = {
+    show: PropTypes.object.isRequired,
+  };
+
+  constructor() {
+    super();
+
+    this.state = {
+      episodes: null,
+    };
+  }
+
+  componentWillMount() {
+    this.update(this.props);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.update(nextProps);
+  }
+
+  update(props) {
+    if (!props.show) {
+      if (this._lastShow) {
+        this.setState({episodes: null});
+      }
+      return;
+    }
+
+    if (this._lastShow !== props.show) {
+      API.getEpisodes(props.show.id).then(episodes => {
+        this.setState({episodes});
+      });
+      this._lastShow = props.show;
+    }
+  }
+
+  render() {
+    var episodes = this.state.episodes &&
+      this.state.episodes.slice(0).reverse();
+    return (
+      <div style={this.props.style}>
+        <h1 style={{
+          fontSize: 24,
+          margin: 4,
+        }}>
+          {this.props.show && this.props.show.name}
+        </h1>
+        <ul>
+        {episodes && episodes.map(episode => {
+          const watchURL = 'http://yify-streaming.com/' +
+            this.props.show.name.toLowerCase().replace(/[^a-z]+/g, '-') +
+            '-season-' + episode.seasonNumber +
+            '-episode-' + episode.episodeNumber;
+          const number = episode.seasonNumber + 'x' + episode.episodeNumber;
+
+          return (
+            <li
+              key={number}
+              style={{
+                background: '#eee',
+                listStyle: 'none',
+                margin: 4,
+                minHeight: 96,
+                padding: 8,
+              }}>
+              <a href={watchURL} style={{display: 'flex'}}>
+                <div style={{flex: 1}}>
+                  <div style={{display: 'flex'}}>
+                    <span style={{fontWeight: 'bold', flex: 1}}>
+                      {number + ' - ' + episode.name}
+                    </span>
+                    <span style={{fontSize: 14}}>
+                      {episode.airDate}
+                    </span>
+                  </div>
+                  <div style={{fontSize: 14}}>
+                    {episode.summary}
+                  </div>
+                </div>
+                <img
+                  src={episode.imageURL}
+                  style={{height: 80, marginLeft: 12}}
+                />
+              </a>
+            </li>
+          );
+        })}
         </ul>
       </div>
     );
@@ -111,25 +214,25 @@ export default class App extends Component {
     super();
 
     this.state = {
-      shows: [],
+      selectedShow: null,
     };
   }
 
   _onShowSelected = (show) => {
-    this.setState({
-      shows: this.state.shows.concat(show),
-    });
+    this.setState({selectedShow: show});
   };
 
   render() {
     return (
-      <div style={{display: 'flex'}}>
+      <div style={{maxWidth: 1000, margin: '0 auto', display: 'flex'}}>
         <ShowSelector
-          existingShows={this.state.shows}
           onShowSelected={this._onShowSelected}
           style={{flex: 1}}
         />
-        <div style={{flex: 1}} />
+        <EpisodeList
+          show={this.state.selectedShow}
+          style={{flex: 2}}
+        />
       </div>
     );
   }

@@ -19,6 +19,7 @@
   "dependencies": {
     "fetch-polyfill": "^0.8.1",
     "radium": "^0.12.2",
-    "react": "^0.13.0"
+    "react": "^0.13.0",
+    "rx-lite": "^2.5.2"
   }
 }
