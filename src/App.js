@@ -1,10 +1,10 @@
 import 'fetch-polyfill';
 
 import React, {Component, PropTypes} from 'react';
-import Radium from 'radium';
+import Radium, {Style} from 'radium';
 import * as API from './api';
 
-@Radium.Enhancer
+@Radium
 class TextInput extends Component {
   render() {
     const {style, ...propsWithoutStyle} = this.props;
@@ -25,7 +25,7 @@ class TextInput extends Component {
   }
 }
 
-@Radium.Enhancer
+@Radium
 class ShowSelector extends Component {
   static propTypes = {
     onShowSelected: PropTypes.func.isRequired,
@@ -34,9 +34,15 @@ class ShowSelector extends Component {
   constructor() {
     super();
 
+    const localShows = localStorage.getItem('shows');
+    let parsedLocalShows = null;
+    try {
+      parsedLocalShows = JSON.parse(localShows);
+    } catch(e) {}
+
     this.state = {
       searchResults: null,
-      existingShows: [],
+      existingShows: parsedLocalShows ||  [],
     };
   }
 
@@ -59,11 +65,13 @@ class ShowSelector extends Component {
 
   _onShowSelected = (show) => {
     if (this.state.searchResults) {
+      const newShows = this.state.existingShows.concat(show);
       this.setState({
         query: '',
         searchResults: null,
-        existingShows: this.state.existingShows.concat(show),
+        existingShows: newShows,
       });
+      localStorage.setItem('shows', JSON.stringify(newShows));
     } else {
       this.props.onShowSelected(show);
     }
@@ -74,7 +82,10 @@ class ShowSelector extends Component {
   };
 
   render() {
-    const shows = this.state.searchResults || this.state.existingShows;
+    const shows = this.state.searchResults ||
+      this.state.existingShows.slice(0).sort(
+        (a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
+      );
     return (
       <div style={this.props.style}>
         <div style={{padding: 4}}>
@@ -113,10 +124,10 @@ class ShowSelector extends Component {
   }
 }
 
-@Radium.Enhancer
+@Radium
 export default class EpisodeList extends Component {
   static propTypes = {
-    show: PropTypes.object.isRequired,
+    show: PropTypes.object,
   };
 
   constructor() {
@@ -155,7 +166,18 @@ export default class EpisodeList extends Component {
     var episodes = this.state.episodes &&
       this.state.episodes.slice(0).reverse();
     return (
-      <div style={this.props.style}>
+      <div className="EpisodeList" style={this.props.style}>
+        <Style
+          scopeSelector=".EpisodeList"
+          rules={{
+            a: {
+              color: 'black'
+            },
+            'a:visited': {
+              color: '#666'
+            }
+          }}
+        />
         <h1 style={{
           fontSize: 24,
           margin: 4,
@@ -208,7 +230,7 @@ export default class EpisodeList extends Component {
   }
 }
 
-@Radium.Enhancer
+@Radium
 export default class App extends Component {
   constructor() {
     super();

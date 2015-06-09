@@ -59,7 +59,7 @@ function translateEpisode(episode) {
     imageURL: episode.image && episode.image.medium,
     name: episode.name,
     seasonNumber: episode.season,
-    summary: episode.summary.replace(/<\/?p>/g, ''),
+    summary: episode.summary.replace(/<\/?[a-z]+ ?\/?>/g, ''),
   };
 }
 
