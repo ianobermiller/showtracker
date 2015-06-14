@@ -246,15 +246,28 @@ export default class App extends Component {
 
   render() {
     return (
-      <div style={{maxWidth: 1000, margin: '0 auto', display: 'flex'}}>
-        <ShowSelector
-          onShowSelected={this._onShowSelected}
-          style={{flex: 1}}
-        />
-        <EpisodeList
-          show={this.state.selectedShow}
-          style={{flex: 2}}
-        />
+      <div style={{
+        maxHeight: 'calc(100% - 16px)',
+        maxWidth: 1000,
+        margin: '0 auto',
+      }}>
+        <div style={{display: 'flex'}}>
+          <ShowSelector
+            onShowSelected={this._onShowSelected}
+            style={{flex: 1, overflowY: 'auto', minHeight: 0}}
+          />
+          <EpisodeList
+            show={this.state.selectedShow}
+            style={{flex: 2, overflowY: 'auto', minHeight: 0}}
+          />
+        </div>
+        <div>
+          <a
+            href="http://www.tvmaze.com/"
+            style={{fontSize: 10, lineHeight: '16px'}}>
+            Powered by TVMaze
+          </a>
+        </div>
       </div>
     );
   }
