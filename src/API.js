@@ -1,9 +1,4 @@
-// http://docs.themoviedb.apiary.io/#reference/tv
-// http://www.programmableweb.com/category/all/apis?keyword=tv
-// http://www.tvmaze.com/api
-
-
-const baseUrl = 'http://api.tvmaze.com/'
+const baseUrl = 'http://api.tvmaze.com/';
 
 const cachedResponses = {};
 
@@ -17,24 +12,14 @@ function getJson(path, params = {}) {
     return Promise.resolve(cachedResponses[url]);
   }
 
-  return cachedResponses[url] = fetch(url)
+  cachedResponses[url] = fetch(url)
     .then(response => response.json())
     .then(json => {
       cachedResponses[url] = json;
       return json;
     });
-}
 
-function ensureArray(value) {
-  if (!value) {
-    return [];
-  }
-
-  if (!Array.isArray(value)) {
-    return [value];
-  }
-
-  return value;
+  return cachedResponses[url];
 }
 
 function translateShow(show) {

@@ -9,6 +9,8 @@
   },
   "parser": "babel-eslint",
   "rules": {
+    "comma-dangle": 0,
+    "no-underscore-dangle": 0,
     "quotes": [2, "single"],
     "strict": [2, "never"],
     "react/jsx-uses-react": 2,
